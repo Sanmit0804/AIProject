@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+.prose pre {
+  background-color: #1e293b; /* Dark slate for code blocks */
+  color: #f1f5f9;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  overflow-x: auto; /* horizontal scroll if too wide */
+}
+
+.prose code {
+  white-space: pre-wrap; /* wrap inline code */
+  word-break: break-word;
+}
