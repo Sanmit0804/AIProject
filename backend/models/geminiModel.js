@@ -6,13 +6,20 @@ dotenv.config();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export const generateTextFromGemini = async (prompt) => {
-  try {
-    // ✅ Use the correct free-tier model name
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const result = await model.generateContent(prompt);
-    return result.response.text();
-  } catch (error) {
-    throw new Error(error.message || "Gemini API request failed");
+  let attempts = 0;
+  while (attempts < 3) {
+    try {
+      const result = await model.generateContent(prompt);
+      return result.response.text();
+    } catch (error) {
+      if (error.message.includes("503") && attempts < 2) {
+        await new Promise(res => setTimeout(res, (attempts + 1) * 2000));
+        attempts++;
+      } else {
+        throw error;
+      }
+    }
   }
 };
