@@ -1,11 +1,12 @@
-import React, { useState } from "react";
-import axios from "axios";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { useState } from 'react';
+import { MessageCircle, X } from 'lucide-react';
+import Home from "./pages/Home";
+import Chatbot from "./components/Chatbot";
 
 export default function App() {
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { role: "system", content: "Hello! I’m your Gemini AI assistant." }
+    { role: "system", content: "Hello! I'm your Gemini AI assistant. How can I help you today?" }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,16 +20,20 @@ export default function App() {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/gemini/generate", {
-        prompt: input
+      // Replace with your actual API call
+      const res = await fetch("http://localhost:5000/api/gemini/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: input })
       });
+      const data = await res.json();
 
-      const botMessage = { role: "bot", content: res.data.output };
+      const botMessage = { role: "bot", content: data.output };
       setMessages((prev) => [...prev, botMessage]);
     } catch (err) {
       setMessages((prev) => [
         ...prev,
-        { role: "bot", content: "⚠️ Error connecting to server." }
+        { role: "bot", content: "⚠️ Sorry, I'm having trouble connecting. Please try again later." }
       ]);
     }
     setLoading(false);
@@ -42,58 +47,37 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
-      <header className="bg-blue-600 text-white text-center p-4 text-lg font-semibold shadow-md">
-        Gemini AI Chatbot
-      </header>
+    <div className="relative">
+      <Home />
 
-      {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`p-3 rounded-lg max-w-lg prose ${
-              msg.role === "user"
-                ? "bg-blue-500 text-white self-end ml-auto"
-                : msg.role === "system"
-                ? "bg-gray-300 text-gray-800 mx-auto"
-                : "bg-gray-200 text-gray-800"
-            }`}
+      {/* Floating Chat Button */}
+      <button
+        onClick={() => setIsChatOpen(true)}
+        className="fixed bottom-6 right-6 bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white p-4 rounded-full shadow-2xl transition-all transform hover:scale-110 z-50"
+      >
+        <MessageCircle className="h-6 w-6" />
+      </button>
+
+      {/* Chat Popup */}
+      {isChatOpen && (
+        <div className="fixed bottom-20 right-6 w-80 h-96 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 transform transition-all duration-300 ease-out animate-in slide-in-from-bottom-2">
+          <button
+            onClick={() => setIsChatOpen(false)}
+            className="absolute -top-2 -right-2 bg-slate-600 hover:bg-slate-700 text-white p-2 rounded-full transition-colors z-10 shadow-lg"
           >
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              // className="prose prose-sm max-w-none"
-            >
-              {msg.content}
-            </ReactMarkdown>
-          </div>
-        ))}
+            <X className="h-4 w-4" />
+          </button>
 
-        {loading && (
-          <div className="bg-gray-200 text-gray-800 p-3 rounded-lg max-w-xs animate-pulse">
-            Gemini is typing...
-          </div>
-        )}
-      </div>
-
-      {/* Input Area */}
-      <div className="p-4 bg-white shadow-md flex">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyPress}
-          placeholder="Type your message..."
-          className="flex-1 border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring focus:border-blue-400 resize-none"
-          rows={1}
-        ></textarea>
-        <button
-          onClick={sendMessage}
-          disabled={loading}
-          className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-        >
-          Send
-        </button>
-      </div>
+          <Chatbot
+            messages={messages}
+            input={input}
+            loading={loading}
+            setInput={setInput}
+            sendMessage={sendMessage}
+            handleKeyPress={handleKeyPress}
+          />
+        </div>
+      )}
     </div>
   );
 }
